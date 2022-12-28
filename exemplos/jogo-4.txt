@@ -1,0 +1,13 @@
+e4 e6
+d4 d5
+Nc3 dxe4
+Nxe4 Nd7
+Bd3 Ngf6
+c3 c5
+Nf3 cxd4
+Nxd4 Nxe4
+Bxe4 Nc5
+Bc2 Bd7
+b4 Na6
+O-O Qf6
+Qe2 0-1

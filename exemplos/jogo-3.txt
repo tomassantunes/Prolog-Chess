@@ -1,0 +1,26 @@
+e4 c6
+Nc3 d5
+Nf3 Bg4
+h3 Bxf3
+Qxf3 e6
+b3 Bc5
+Bb2 Bd4
+exd5 cxd5
+Bb5+ Nc6
+O-O Nge7
+Rae1 O-O
+Bc1 Bf6
+Ne2 a6
+Bxc6 Nxc6
+Nf4 Nd4
+Qd3 g6
+c3 Nc6
+Qf3 Bg7
+d4 Qf6
+Qg3 Ne7
+Nd3 Nf5
+Qg4 h5
+Qf3 Nd6
+Qe3 Nf5
+Qf3 Nd6
+Qe3 Nf5 1/2-1/2
