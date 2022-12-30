@@ -12,3 +12,6 @@ gets(I, C, [C|O]) :- get0(CC), gets(I, CC, O).
 read_file(X) :- gets(X), format("~s", [X]).
 
 unload_file(FILENAME) :- seeing(FILENAME), seen.
+
+% + -> check
+% # -> checkmate

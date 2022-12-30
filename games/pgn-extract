@@ -1,0 +1,30 @@
+#! /bin/bash
+
+INPUT=$1
+GAME=$2
+
+JJ=0				# current game number in input stream
+SHOW=				# empty means dont print
+NUM=x				# non-empty means display move number
+cat $INPUT | \
+grep -v '^\[' | \
+    sed -e 's/{[^}]*} *//g' | \
+    tr ' ' '\n' | \
+    ( while read F; do \
+	case x$F in
+	    x[0-9]*.) NJ=${F/./}
+		      [ $NJ = 1 ] && JJ=$[$JJ+1]
+		      SHOWX=
+		      [ -n "$J" -a "$J" == $JJ ] && SHOWX=yes
+		      echo
+		      [ -n "$NUM" ] && { 
+			  [ $NJ = 1 ] && echo "[$JJ]"
+			  echo -n $F;
+		      }
+		      ;; 
+	    x) ;;
+	    x*) test -n $SHOWX && echo -n " $F";;
+	esac
+      done; echo ) | \
+	  awk -f games-extract.awk -v GAME=$GAME
+
