@@ -5,36 +5,41 @@ expr(jogada(A, B))    --> branca(A), " ", preta(B).
 expr(jogada(A, B))    --> branca(A), " ", resultado(B).
 expr(jogada(A, B, C)) --> branca(A), " ", preta(B), " ", resultado(C).
 
-branca(V)                   --> coluna(V), linha(V).
-branca(A)                   --> castle(A). % Ex: O-O
-branca(move(A, B))          --> coluna(A), linha(B). % Ex: e4
-branca(move(A, B, C))       --> piece(A), coluna(B), linha(C). % Ex: Nf3
-branca(move(A, B, C, D))    --> piece(A), coluna(B), coluna(C), linha(D). % Ex: Nbd2
-branca(move(A, B, C, D))    --> coluna(A), action(B), coluna(C), linha(D). % Ex: exf5
-branca(move(A, B, C, D))    --> piece(A), action(B), coluna(C), linha(D). % Ex: Qxf6
-branca(move(A, B, C))       --> coluna(A), linha(B), action(C). % e5+
-branca(move(A, B, C, D, F)) --> coluna(A), action(B), coluna(C), linha(D), action(F). % exf5+
-branca(move(A, B, C, D))    --> piece(A), coluna(B), linha(C), action(D). % Ra8+
-branca(move(A, B, C, D, F)) --> piece(A), action(B), coluna(C), linha(D), action(F).  % Ex: Rxa8+
+branca(V)                        --> coluna(V), linha(V).
+branca(A)                        --> castle(A). % Ex: O-O
+branca(move('P', A, B))          --> coluna(A), linha(B). % Ex: e4
+branca(move(A, B, C))            --> piece(A), coluna(B), linha(C). % Ex: Nf3
+branca(move(A, B, C, D))         --> piece(A), coluna(B), coluna(C), linha(D). % Ex: Nbd2
+branca(move('P', A, B, C, D))    --> coluna(A), action(B), coluna(C), linha(D). % Ex: exf5
+branca(move(A, B, C, D))         --> piece(A), action(B), coluna(C), linha(D). % Ex: Qxf6
+branca(move(A, B, C, D, E))      --> piece(A), coluna(B), action(C), coluna(D), linha(E). % Ex: Nbxf6
+branca(move('P', A, B, C))       --> coluna(A), linha(B), action(C). % e5+
+branca(move('P', A, B, C, D, E)) --> coluna(A), action(B), coluna(C), linha(D), action(E). % exf5+
+branca(move(A, B, C, D))         --> piece(A), coluna(B), linha(C), action(D). % Ra8+
+branca(move(A, B, C, D, E))      --> piece(A), action(B), coluna(C), linha(D), action(E).  % Ex: Rxa8+
+branca(move(A, B, C, D, E, F))   --> piece(A), coluna(B), action(C), coluna(D), linha(E), action(F).  % Ex: Nbxa8+
 
-preta(V)                    --> coluna(V), linha(V).
-preta(A)                    --> castle(A). % Ex: O-O
-preta(move(A, B))           --> coluna(A), linha(B). % Ex: e4
-preta(move(A, B, C))        --> piece(A), coluna(B), linha(C). % Ex: Nf3
-preta(move(A, B, C, D))     --> piece(A), coluna(B), coluna(C), linha(D). % Ex: Nbd2
-preta(move(A, B, C, D))     --> coluna(A), action(B), coluna(C), linha(D). % Ex: exf5
-preta(move(A, B, C, D))     --> piece(A), action(B), coluna(C), linha(D). % Ex: Qxf6
-preta(move(A, B, C))        --> coluna(A), linha(B), action(C). % e5+
-preta(move(A, B, C, D, F))  --> coluna(A), action(B), coluna(C), linha(D), action(F). % exf5+
-preta(move(A, B, C, D))     --> piece(A), coluna(B), linha(C), action(D). % Ra8+
-preta(move(A, B, C, D, F))  --> piece(A), action(B), coluna(C), linha(D), action(F).  % Ex: Rxa8+
+preta(V)                         --> coluna(V), linha(V).
+preta(A)                         --> castle(A). % Ex: O-O
+preta(move('P', A, B))           --> coluna(A), linha(B). % Ex: e4
+preta(move(A, B, C))             --> piece(A), coluna(B), linha(C). % Ex: Nf3
+preta(move(A, B, C, D))          --> piece(A), coluna(B), coluna(C), linha(D). % Ex: Nbd2
+preta(move(A, B, C, D, E))       --> piece(A), coluna(B), action(C), coluna(D), linha(E). % Ex: Nbxf6
+preta(move('P', A, B, C, D))     --> coluna(A), action(B), coluna(C), linha(D). % Ex: exf5
+preta(move(A, B, C, D))          --> piece(A), action(B), coluna(C), linha(D). % Ex: Qxf6
+preta(move('P', A, B, C))        --> coluna(A), linha(B), action(C). % e5+
+preta(move('P', A, B, C, D, E))  --> coluna(A), action(B), coluna(C), linha(D), action(E). % exf5+
+preta(move(A, B, C, D))          --> piece(A), coluna(B), linha(C), action(D). % Ra8+
+preta(move(A, B, C, D, E))       --> piece(A), action(B), coluna(C), linha(D), action(E).  % Ex: Rxa8+
+preta(move(A, B, C, D, E, F))    --> piece(A), coluna(B), action(C), coluna(D), linha(E), action(F).  % Ex: Nbxa8+
 
 
-piece(king)   --> "K".
-piece(queen)  --> "Q".
-piece(rook)   --> "R".
-piece(bishop) --> "B".
-piece(knight) --> "N".
+
+piece('K') --> "K".
+piece('Q') --> "Q".
+piece('R') --> "R".
+piece('B') --> "B".
+piece('K') --> "N".
 
 action(takes)     --> "x".
 action(check)     --> "+".
