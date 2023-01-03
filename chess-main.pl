@@ -91,15 +91,15 @@ coluna(f, 6).
 coluna(g, 7).
 coluna(h, 8).
 
-init :-
-    init_posicoes,
-    mostrar_tabuleiro,
-    jogar. 
-
-
 /* init :-
     init_posicoes,
-    mostrar_tabuleiro. */
+    mostrar_tabuleiro,
+    jogar.  */
+
+
+init :-
+    init_posicoes,
+    mostrar_tabuleiro.
 
 jogar :-
     ler_linha(jogada(B, P)),
@@ -178,3 +178,13 @@ validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial) :-
     coluna(ColunaFinal, ColunaFinalInt),
     ColunaInicialInt is ColunaFinalInt - 1, LinhaInicial is LinhaFinal + 2,
     coluna(ColunaInicial, ColunaInicialInt), posicao('N', COR, ColunaInicial, LinhaInicial).
+
+diagonal_direita_para_cima(COR, P, CF, LF, CI, LI) :-
+    posicao(P, COR, CI, LI);
+
+    coluna(CI, CIInt), C is CIInt - 1, coluna(CII, C), LII is LI -1,
+    diagonal_direita_para_cima(COR, P, CF, LF, CII, LII).
+
+validar_bispo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial) :-
+    coluna(ColunaFinal, CF), CI is CF - 1, coluna(ColunaInicial, CI), LinhaInicial is LinhaFinal - 1,
+    diagonal_direita_para_cima(COR, 'B', ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial).
