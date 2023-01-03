@@ -39,7 +39,7 @@ piece('K') --> "K".
 piece('Q') --> "Q".
 piece('R') --> "R".
 piece('B') --> "B".
-piece('K') --> "N".
+piece('N') --> "N".
 
 action(takes)     --> "x".
 action(check)     --> "+".

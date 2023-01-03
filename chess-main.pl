@@ -96,6 +96,11 @@ init :-
     mostrar_tabuleiro,
     jogar. 
 
+
+/* init :-
+    init_posicoes,
+    mostrar_tabuleiro. */
+
 jogar :-
     ler_linha(jogada(B, P)),
 
@@ -113,9 +118,63 @@ ler_linha(X) :-
     gets(L),
     phrase(expr(X), L, []).
 
-atualizar_tabuleiro(COR, move('P', ColunaFinal, LinhaFinal)) :-
-    posicao('P', COR, ColunaFinal, _),
-    retract(posicao('P', COR, ColunaFinal, _)),
-    assertz(posicao('P', COR, ColunaFinal, LinhaFinal)).
+atualizar_tabuleiro(COR, move(TIPO, ColunaFinal, LinhaFinal)) :-
+    TIPO = 'P',
+    validar_peao(COR, ColunaFinal, LinhaFinal),
+    posicao(TIPO, COR, ColunaFinal, _),
+    retract(posicao(TIPO, COR, ColunaFinal, _)),
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
 
+    TIPO = 'N',
+    validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)),
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
     
+    true.
+
+
+validar_peao(COR, Coluna, LinhaFinal) :-
+    COR = w, posicao('P', COR, Coluna, LinhaAtual),
+    LinhaAtual #= 2, LinhaFinal - LinhaAtual =< 2;
+
+    COR = w, posicao('P', COR, Coluna, LinhaAtual),
+    LinhaAtual #\= 2, LinhaFinal - LinhaAtual #=1;
+
+    COR = b, posicao('P', COR, Coluna, LinhaAtual),
+    LinhaAtual #= 7, LinhaAtual - LinhaFinal =< 2;
+
+    COR = b, posicao('P', COR, Coluna, LinhaAtual),
+    LinhaAtual #\= 7, LinhaAtual - LinhaFinal #= 1.
+
+validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial) :-
+    coluna(ColunaFinal, ColunaFinalInt),
+    ColunaInicialInt is ColunaFinalInt + 1, LinhaInicial is LinhaFinal - 2,
+    coluna(ColunaInicial, ColunaInicialInt), posicao('N', COR, ColunaInicial, LinhaInicial);
+
+    coluna(ColunaFinal, ColunaFinalInt),
+    ColunaInicialInt is ColunaFinalInt - 1, LinhaInicial is LinhaFinal - 2,
+    coluna(ColunaInicial, ColunaInicialInt), posicao('N', COR, ColunaInicial, LinhaInicial);
+
+    coluna(ColunaFinal, ColunaFinalInt),
+    ColunaInicialInt is ColunaFinalInt - 2, LinhaInicial is LinhaFinal - 1,
+    coluna(ColunaInicial, ColunaInicialInt), posicao('N', COR, ColunaInicial, LinhaInicial);
+
+    coluna(ColunaFinal, ColunaFinalInt),
+    ColunaInicialInt is ColunaFinalInt - 2, LinhaInicial is LinhaFinal + 1,
+    coluna(ColunaInicial, ColunaInicialInt), posicao('N', COR, ColunaInicial, LinhaInicial);
+
+    coluna(ColunaFinal, ColunaFinalInt),
+    ColunaInicialInt is ColunaFinalInt + 2, LinhaInicial is LinhaFinal - 1,
+    coluna(ColunaInicial, ColunaInicialInt), posicao('N', COR, ColunaInicial, LinhaInicial);
+
+    coluna(ColunaFinal, ColunaFinalInt),
+    ColunaInicialInt is ColunaFinalInt + 2, LinhaInicial is LinhaFinal + 1,
+    coluna(ColunaInicial, ColunaInicialInt), posicao('N', COR, ColunaInicial, LinhaInicial);
+
+    coluna(ColunaFinal, ColunaFinalInt),
+    ColunaInicialInt is ColunaFinalInt + 1, LinhaInicial is LinhaFinal + 2,
+    coluna(ColunaInicial, ColunaInicialInt), posicao('N', COR, ColunaInicial, LinhaInicial);
+
+    coluna(ColunaFinal, ColunaFinalInt),
+    ColunaInicialInt is ColunaFinalInt - 1, LinhaInicial is LinhaFinal + 2,
+    coluna(ColunaInicial, ColunaInicialInt), posicao('N', COR, ColunaInicial, LinhaInicial).
