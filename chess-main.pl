@@ -91,15 +91,15 @@ coluna(f, 6).
 coluna(g, 7).
 coluna(h, 8).
 
-/* init :-
-    init_posicoes,
-    mostrar_tabuleiro,
-    jogar.  */
-
-
 init :-
     init_posicoes,
-    mostrar_tabuleiro.
+    mostrar_tabuleiro,
+    jogar. 
+
+
+/* init :-
+    init_posicoes,
+    mostrar_tabuleiro. */
 
 jogar :-
     ler_linha(jogada(B, P)),
@@ -130,8 +130,54 @@ atualizar_tabuleiro(COR, move(TIPO, ColunaFinal, LinhaFinal)) :-
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)),
     assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
     
+    TIPO = 'B',
+    validar_bispo(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)),
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
+    TIPO = 'R',
+    validar_torre(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)),
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
+    TIPO = 'Q',
+    validar_rainha(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)),
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
+    TIPO = 'K',
+    validar_rei(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)),
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
     true.
 
+atualizar_tabuleiro(COR, CASTLE) :-
+    COR = 'w',
+    CASTLE = 'kingside_castle',
+    validar_kingside_castle(COR),
+    retract(posicao('K', COR, e, 1)), retract(posicao('R', COR, h, 1)),
+    assertz(posicao('K', COR, g, 1)), assertz(posicao('R', COR, f, 1));
+
+    COR = 'b',
+    CASTLE = 'kingside_castle',
+    validar_kingside_castle(COR),
+    retract(posicao('K', COR, e, 8)), retract(posicao('R', COR, h, 8)),
+    assertz(posicao('K', COR, g, 8)), assertz(posicao('R', COR, f, 8));
+
+    COR = 'w',
+    CASTLE = 'queenside_castle',
+    validar_kingside_castle(COR),
+    retract(posicao('K', COR, e, 1)), retract(posicao('R', COR, a, 1)),
+    assertz(posicao('K', COR, c, 1)), assertz(posicao('R', COR, d, 1));
+
+    COR = 'b',
+    CASTLE = 'queenside_castle',
+    validar_kingside_castle(COR),
+    retract(posicao('K', COR, e, 8)), retract(posicao('R', COR, a, 8)),
+    assertz(posicao('K', COR, c, 8)), assertz(posicao('R', COR, d, 8));
+
+    true.
 
 validar_peao(COR, Coluna, LinhaFinal) :-
     COR = w, posicao('P', COR, Coluna, LinhaAtual),
@@ -165,7 +211,6 @@ validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial) :-
 
     coluna(ColunaFinal, ColunaFinalInt),
     ColunaInicialInt is ColunaFinalInt + 2, LinhaInicial is LinhaFinal - 1,
-    coluna(ColunaInicial, ColunaInicialInt), posicao('N', COR, ColunaInicial, LinhaInicial);
 
     coluna(ColunaFinal, ColunaFinalInt),
     ColunaInicialInt is ColunaFinalInt + 2, LinhaInicial is LinhaFinal + 1,
@@ -179,12 +224,75 @@ validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial) :-
     ColunaInicialInt is ColunaFinalInt - 1, LinhaInicial is LinhaFinal + 2,
     coluna(ColunaInicial, ColunaInicialInt), posicao('N', COR, ColunaInicial, LinhaInicial).
 
-diagonal_direita_para_cima(COR, P, CF, LF, CI, LI) :-
+diagonal_direita_cima(COR, P, CF, LF, CI, LI) :-
+    coluna(CF, CFInt), CFIntI is CFInt - 1, coluna(CI, CFIntI), LI is LF - 1,
     posicao(P, COR, CI, LI);
 
-    coluna(CI, CIInt), C is CIInt - 1, coluna(CII, C), LII is LI -1,
-    diagonal_direita_para_cima(COR, P, CF, LF, CII, LII).
+    coluna(CF, CFInt), CFIntI is CFInt - 1, coluna(CFF, CFIntI), LFF is LF - 1,
+    diagonal_direita_cima(COR, P, CFF, LFF, CI, LI).
 
-validar_bispo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial) :-
-    coluna(ColunaFinal, CF), CI is CF - 1, coluna(ColunaInicial, CI), LinhaInicial is LinhaFinal - 1,
-    diagonal_direita_para_cima(COR, 'B', ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial).
+diagonal_direita_baixo(COR, P, CF, LF, CI, LI) :-
+    coluna(CF, CFInt), CFIntI is CFInt - 1, coluna(CI, CFIntI), LI is LF + 1,
+    posicao(P, COR, CI, LI);
+
+    coluna(CF, CFInt), CFIntI is CFInt - 1, coluna(CFF, CFIntI), LFF is LF + 1,
+    diagonal_direita_baixo(COR, P, CFF, LFF, CI, LI).
+
+diagonal_esquerda_cima(COR, P, CF, LF, CI, LI) :-
+    coluna(CF, CFInt), CFIntI is CFInt + 1, coluna(CI, CFIntI), LI is LF - 1,
+    posicao(P, COR, CI, LI);
+
+    coluna(CF, CFInt), CFIntI is CFInt + 1, coluna(CFF, CFIntI), LFF is LF - 1,
+    diagonal_esquerda_cima(COR, P, CFF, LFF, CI, LI).
+
+diagonal_esquerda_baixo(COR, P, CF, LF, CI, LI) :-
+    coluna(CF, CFInt), CFIntI is CFInt + 1, coluna(CI, CFIntI), LI is LF + 1,
+    posicao(P, COR, CI, LI);
+
+    coluna(CF, CFInt), CFIntI is CFInt + 1, coluna(CFF, CFIntI), LFF is LF + 1,
+    diagonal_esquerda_baixo(COR, P, CFF, LFF, CI, LI).
+
+validar_bispo(COR, P, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial) :-
+    diagonal_direita_cima(COR, P, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial);
+    diagonal_direita_baixo(COR, P, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial);
+    diagonal_esquerda_cima(COR, P, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial);
+    diagonal_esquerda_baixo(COR, P, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial).
+
+validar_torre(COR, P, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial) :-
+    posicao(P, COR, ColunaFinal, LinhaInicial), posicao(P, COR, ColunaInicial, LinhaInicial);
+    posicao(P, COR, ColunaInicial, LinhaFinal), posicao(P, COR, ColunaInicial, LinhaInicial).
+
+validar_rainha(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial) :-
+    validar_bispo(COR, 'Q', ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial);
+    validar_torre(COR, 'Q', ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial).
+
+validar_rei(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial) :-
+    LinhaInicial is LinhaFinal - 1, ColunaInicial = ColunaFinal, posicao('K', COR, ColunaInicial, LinhaInicial);
+    LinhaInicial is LinhaFinal + 1, ColunaInicial = ColunaFinal, posicao('K', COR, ColunaInicial, LinhaInicial);
+
+    LinhaInicial = LinhaFinal, coluna(ColunaFinal, CI), CII is CI - 1, coluna(ColunaInicial, CII), posicao('K', COR, ColunaInicial, LinhaInicial);
+    LinhaInicial = LinhaFinal, coluna(ColunaFinal, CI), CII is CI + 1, coluna(ColunaInicial, CII), posicao('K', COR, ColunaInicial, LinhaInicial);
+
+    LinhaInicial is LinhaFinal - 1, coluna(ColunaFinal, CI), CII is CI - 1, coluna(ColunaInicial, CII), posicao('K', COR, ColunaInicial, LinhaInicial);
+    LinhaInicial is LinhaFinal + 1, coluna(ColunaFinal, CI), CII is CI - 1, coluna(ColunaInicial, CII), posicao('K', COR, ColunaInicial, LinhaInicial);
+
+    LinhaInicial is LinhaFinal - 1, coluna(ColunaFinal, CI), CII is CI + 1, coluna(ColunaInicial, CII), posicao('K', COR, ColunaInicial, LinhaInicial);
+    LinhaInicial is LinhaFinal + 1, coluna(ColunaFinal, CI), CII is CI + 1, coluna(ColunaInicial, CII), posicao('K', COR, ColunaInicial, LinhaInicial).
+
+validar_kingside_castle(COR) :-
+    COR = 'w',
+    % rei em e1 e torre em h1, f1 e g1 estão vazios,
+    posicao('K', COR, e, 1), posicao('R', COR, h, 1), \+ posicao(_, _, f, 1), \+ posicao(_, _, g, 1);
+    
+    COR = 'b',
+    % rei em e8 e torre em h8, f8 e g8 estão vazios 
+    posicao('K', COR, e, 8), posicao('R', COR, h, 8), \+ posicao(_, _, f, 8), \+ posicao(_, _, g, 8).
+
+validar_queenside_castle(COR) :-
+    COR = 'w',
+    % rei em e1 e torre em a1, b1, c1 e d1 estão vazios,
+    posicao('K', COR, e, 1), posicao('R', COR, a, 1), \+ posicao(_, _, b, 1), \+ posicao(_, _, c, 1), \+ posicao(_, _, d, 1);
+    
+    COR = 'b',
+    % rei em e8 e torre em a8, b8, c8 e d8 estão vazios 
+    posicao('K', COR, e, 8), posicao('R', COR, a, 8), \+ posicao(_, _, b, 8), \+ posicao(_, _, c, 8), \+ posicao(_, _, d, 8).
