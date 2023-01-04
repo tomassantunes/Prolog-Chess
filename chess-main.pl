@@ -91,15 +91,15 @@ coluna(f, 6).
 coluna(g, 7).
 coluna(h, 8).
 
-init :-
-    init_posicoes,
-    mostrar_tabuleiro,
-    jogar. 
-
-
 /* init :-
     init_posicoes,
-    mostrar_tabuleiro. */
+    mostrar_tabuleiro,
+    jogar.  */
+
+
+init :-
+    init_posicoes,
+    mostrar_tabuleiro.
 
 jogar :-
     ler_linha(jogada(B, P)),
@@ -118,6 +118,7 @@ ler_linha(X) :-
     gets(L),
     phrase(expr(X), L, []).
 
+% movimentos básicos
 atualizar_tabuleiro(COR, move(TIPO, ColunaFinal, LinhaFinal)) :-
     TIPO = 'P',
     validar_peao(COR, ColunaFinal, LinhaFinal),
@@ -152,6 +153,22 @@ atualizar_tabuleiro(COR, move(TIPO, ColunaFinal, LinhaFinal)) :-
 
     true.
 
+% movimentos de peões com take
+atualizar_tabuleiro(COR, move(TIPO, ColunaInicial, x, ColunaFinal, LinhaFinal)) :-
+    validar_peao_takes(COR, ColunaInicial, ColunaFinal, LinhaFinal, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
+    true.
+
+% movimentos do resto das peças com take
+atualizar_tabuleiro(COR, move(TIPO, x, ColunaFinal, LinhaFinal)) :-
+    TIPO = 'N',
+    validar_cavalo_takes(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)).
+
+
 atualizar_tabuleiro(COR, CASTLE) :-
     COR = 'w',
     CASTLE = 'kingside_castle',
@@ -180,17 +197,35 @@ atualizar_tabuleiro(COR, CASTLE) :-
     true.
 
 validar_peao(COR, Coluna, LinhaFinal) :-
-    COR = w, posicao('P', COR, Coluna, LinhaAtual),
+    COR = w, posicao('P', COR, Coluna, LinhaAtual), \+ posicao(_, _, Coluna, LinhaFinal),
     LinhaAtual #= 2, LinhaFinal - LinhaAtual =< 2;
 
-    COR = w, posicao('P', COR, Coluna, LinhaAtual),
+    COR = w, posicao('P', COR, Coluna, LinhaAtual), \+ posicao(_, _, Coluna, LinhaFinal),
     LinhaAtual #\= 2, LinhaFinal - LinhaAtual #=1;
 
-    COR = b, posicao('P', COR, Coluna, LinhaAtual),
+    COR = b, posicao('P', COR, Coluna, LinhaAtual), \+ posicao(_, _, Coluna, LinhaFinal),
     LinhaAtual #= 7, LinhaAtual - LinhaFinal =< 2;
 
-    COR = b, posicao('P', COR, Coluna, LinhaAtual),
+    COR = b, posicao('P', COR, Coluna, LinhaAtual), \+ posicao(_, _, Coluna, LinhaFinal),
     LinhaAtual #\= 7, LinhaAtual - LinhaFinal #= 1.
+
+validar_peao_takes(COR, ColunaInicial, ColunaFinal, LinhaFinal, LinhaInicial) :-
+    COR = w, posicao('P', COR, ColunaInicial, LinhaInicial), \+ posicao('K', _, ColunaFinal, LinhaFinal), posicao(_, b, ColunaFinal, LinhaFinal),
+    coluna(ColunaFinal, ColunaFinalInt), ColunaInicialInt is ColunaFinalInt - 1, coluna(ColunaInicial, ColunaInicialInt),
+    LinhaInicial #= LinhaFinal - 1;
+
+    COR = w, posicao('P', COR, ColunaInicial, LinhaInicial), \+ posicao('K', _, ColunaFinal, LinhaFinal), posicao(_, b, ColunaFinal, LinhaFinal),
+    coluna(ColunaFinal, ColunaFinalInt), ColunaInicialInt is ColunaFinalInt + 1, coluna(ColunaInicial, ColunaInicialInt),
+    LinhaInicial #= LinhaFinal - 1;
+
+    COR = w, posicao('P', COR, ColunaInicial, LinhaInicial), \+ posicao('K', _, ColunaFinal, LinhaFinal), posicao(_, w, ColunaFinal, LinhaFinal),
+    coluna(ColunaFinal, ColunaFinalInt), ColunaInicialInt is ColunaFinalInt - 1, coluna(ColunaInicial, ColunaInicialInt),
+    LinhaInicial #= LinhaFinal + 1;
+
+    COR = b, posicao('P', COR, ColunaInicial, LinhaInicial), \+ posicao('K', _, ColunaFinal, LinhaFinal), posicao(_, w, ColunaFinal, LinhaFinal),
+    coluna(ColunaFinal, ColunaFinalInt), ColunaInicialInt is ColunaFinalInt + 1, coluna(ColunaInicial, ColunaInicialInt),
+    LinhaInicial #= LinhaFinal + 1.
+
 
 validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial) :-
     coluna(ColunaFinal, ColunaFinalInt),
@@ -211,6 +246,7 @@ validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial) :-
 
     coluna(ColunaFinal, ColunaFinalInt),
     ColunaInicialInt is ColunaFinalInt + 2, LinhaInicial is LinhaFinal - 1,
+    coluna(ColunaInicial, ColunaInicialInt), posicao('N', COR, ColunaInicial, LinhaInicial);
 
     coluna(ColunaFinal, ColunaFinalInt),
     ColunaInicialInt is ColunaFinalInt + 2, LinhaInicial is LinhaFinal + 1,
@@ -223,6 +259,15 @@ validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial) :-
     coluna(ColunaFinal, ColunaFinalInt),
     ColunaInicialInt is ColunaFinalInt - 1, LinhaInicial is LinhaFinal + 2,
     coluna(ColunaInicial, ColunaInicialInt), posicao('N', COR, ColunaInicial, LinhaInicial).
+
+validar_cavalo_takes(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial) :-
+    COR = 'w',
+    validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    \+ posicao('K', b, ColunaFinal, LinhaFinal), posicao(_, b, ColunaFinal, LinhaFinal);
+
+    COR = 'b',
+    validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    \+ posicao('K', w, ColunaFinal, LinhaFinal), posicao(_, w, ColunaFinal, LinhaFinal).
 
 diagonal_direita_cima(COR, P, CF, LF, CI, LI) :-
     coluna(CF, CFInt), CFIntI is CFInt - 1, coluna(CI, CFIntI), LI is LF - 1,
