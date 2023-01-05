@@ -19,6 +19,8 @@ branca(move('P', A, B, C))       --> coluna(A), linha(B), action(C). % e5+
 branca(move('P', A, B, C, D, E)) --> coluna(A), action(B), coluna(C), linha(D), action(E). % exf5+
 branca(move(A, B, C, D))         --> piece(A), coluna(B), linha(C), action(D). % Ra8+
 branca(move(A, B, C, D, E))      --> piece(A), action(B), coluna(C), linha(D), action(E).  % Ex: Rxa8+
+branca(move(A, B, C, D, E))      --> piece(A), coluna(B), coluna(C), linha(D), action(E).  % Ex: Nba8+
+branca(move(A, B, C, D, E))      --> piece(A), linha(B), coluna(C), linha(D), action(E).  % Ex: R3a8+
 branca(move(A, B, C, D, E, F))   --> piece(A), coluna(B), action(C), coluna(D), linha(E), action(F).  % Ex: Nbxa8+
 branca(move(A, B, C, D, E, F))   --> piece(A), linha(B), action(C), coluna(D), linha(E), action(F).  % Ex: R3xa8+
 
@@ -36,6 +38,8 @@ preta(move('P', A, B, C))        --> coluna(A), linha(B), action(C). % e5+
 preta(move('P', A, B, C, D, E))  --> coluna(A), action(B), coluna(C), linha(D), action(E). % exf5+
 preta(move(A, B, C, D))          --> piece(A), coluna(B), linha(C), action(D). % Ra8+
 preta(move(A, B, C, D, E))       --> piece(A), action(B), coluna(C), linha(D), action(E).  % Ex: Rxa8+
+preta(move(A, B, C, D, E))       --> piece(A), coluna(B), coluna(C), linha(D), action(E).  % Ex: Nba8+
+preta(move(A, B, C, D, E))       --> piece(A), linha(B), coluna(C), linha(D), action(E).  % Ex: R3a8+
 preta(move(A, B, C, D, E, F))    --> piece(A), coluna(B), action(C), coluna(D), linha(E), action(F).  % Ex: Nbxa8+
 preta(move(A, B, C, D, E, F))    --> piece(A), linha(B), action(C), coluna(D), linha(E), action(F).  % Ex: R3xa8+
 

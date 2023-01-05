@@ -64,7 +64,7 @@ init_posicoes :-
     assertz(posicao('B', b, f, 8)).
 
 mostrar_tabuleiro :-
-    forall(between(1, 8, L), (write(L), mostrar_linha(L))), write('  a  b  c  d  e  f  g  h'), nl.
+    forall(between(1, 8, L), (linha(L, LL), write(LL), mostrar_linha(LL))), write('  a  b  c  d  e  f  g  h'), nl.
 
 mostrar_linha(L) :-
     write(' '),
@@ -77,6 +77,15 @@ mostrar_posicao(C, L) :-
     write(COR), write(TIPO).
 
 mostrar_posicao(_, _) :- write('  ').
+
+linha(1, 8).
+linha(2, 7).
+linha(3, 6).
+linha(4, 5).
+linha(5, 4).
+linha(6, 3).
+linha(7, 2).
+linha(8, 1).
 
 coluna(a, 1).
 coluna(b, 2).
@@ -107,11 +116,31 @@ jogar :-
     atualizar_tabuleiro(b, P),
     mostrar_tabuleiro,
 
+    jogar;
+
+    ler_linha(jogada(B, P, R)),
+
+    print(B), print(' -> brancas'), nl,
+    atualizar_tabuleiro(w, B),
+    mostrar_tabuleiro,
+
+    print(P), print(' -> pretas'), nl,
+    atualizar_tabuleiro(b, P),
+    mostrar_tabuleiro,
+
+    print(R), nl,
+    atualizar_tabuleiro(b, R),
+    mostrar_tabuleiro,
+
     jogar.
 
 ler_linha(X) :-
     gets(L),
     phrase(expr(X), L, []).
+
+fim(white_wins) :- print('BRANCAS GANHAM'), nl, print('Pontuação -> 1-0').
+fim(black_wins) :- print('PRETAS GANHAM'), nl, print('Pontuação -> 0-1').
+fim(empate)     :- print('EMPATE'), nl, print('Pontuação -> 1/2-1/2').
 
 % movimentos básicos
 atualizar_tabuleiro(COR, move(TIPO, ColunaFinal, LinhaFinal)) :-
@@ -148,28 +177,18 @@ atualizar_tabuleiro(COR, move(TIPO, ColunaFinal, LinhaFinal)) :-
 
     true.
 
-% movimentos de peças em que haja a eventualidade de escolher a peça que está na coluna x
-atualizar_tabuleiro(COR, move(TIPO, ColunaInicial, ColunaFinal, LinhaFinal)) :-
-    TIPO = 'N', validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
-    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
-
-    TIPO = 'R', validar_torre(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
-    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)).
-
-% movimentos de peças em que haja a eventualidade de escolher a peça que está na linha x
-atualizar_tabuleiro(COR, move(TIPO, LinhaInicial, ColunaFinal, LinhaFinal)) :-
-    TIPO = 'N', validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
-    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
-
-    TIPO = 'R', validar_torre(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
-    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)).
-
-
 % movimentos de peões com take
 atualizar_tabuleiro(COR, move(TIPO, ColunaInicial, takes, ColunaFinal, LinhaFinal)) :-
     validar_peao_takes(COR, ColunaInicial, ColunaFinal, LinhaFinal, LinhaInicial),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
     assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
+    true.
+
+% movimentos de peões com take e check ou checkmate
+atualizar_tabuleiro(COR, move(TIPO, ColunaInicial, takes, ColunaFinal, LinhaFinal, A)) :-
+    validar_peao_takes(COR, ColunaInicial, ColunaFinal, LinhaFinal, _),
+    retract(posicao(_, _, ColunaFinal, LinhaFinal)), atualizar_tabuleiro(COR, move(TIPO, ColunaFinal, LinhaFinal, A));
 
     true.
 
@@ -193,7 +212,49 @@ atualizar_tabuleiro(COR, move(TIPO, takes, ColunaFinal, LinhaFinal)) :-
 
     TIPO = 'K', validar_rei_takes(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)).
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+    
+    true.
+
+% movimentos do resto das peças com take e check ou checkmate
+atualizar_tabuleiro(COR, move(TIPO, takes, ColunaFinal, LinhaFinal, A)) :-
+    TIPO = 'N', validar_cavalo_takes(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), atualizar_tabuleiro(COR, move(TIPO, ColunaFinal, LinhaFinal, A));
+
+    TIPO = 'B', validar_bispo_takes(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), atualizar_tabuleiro(COR, move(TIPO, ColunaFinal, LinhaFinal, A));
+
+    TIPO = 'R', validar_torre_takes(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), atualizar_tabuleiro(COR, move(TIPO, ColunaFinal, LinhaFinal, A));
+
+    TIPO = 'Q', validar_rainha_takes(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), atualizar_tabuleiro(COR, move(TIPO, ColunaFinal, LinhaFinal, A));
+
+    true.
+
+% movimentos de peças em que haja a eventualidade de escolher a peça que está na coluna x
+atualizar_tabuleiro(COR, move(TIPO, ColunaInicial, ColunaFinal, LinhaFinal)) :-
+    TIPO = 'N', validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
+    TIPO = 'R', validar_torre(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
+    true.
+
+% movimentos de peças em que haja a eventualidade de escolher a peça que está na linha x
+atualizar_tabuleiro(COR, move(TIPO, LinhaInicial, ColunaFinal, LinhaFinal)) :-
+    TIPO = 'N', validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
+    TIPO = 'R', validar_torre(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
+    true.
 
 % movimentos de peças com take em que haja a eventualidade de escolher a peça que está na coluna x
 atualizar_tabuleiro(COR, move(TIPO, ColunaInicial, takes, ColunaFinal, LinhaFinal)) :-
@@ -203,7 +264,9 @@ atualizar_tabuleiro(COR, move(TIPO, ColunaInicial, takes, ColunaFinal, LinhaFina
 
     TIPO = 'R', validar_torre_takes(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)).
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
+    true.
 
 % movimentos de peças com take em que haja a eventualidade de escolher a peça que está na linha x
 atualizar_tabuleiro(COR, move(TIPO, LinhaInicial, takes, ColunaFinal, LinhaFinal)) :-
@@ -213,7 +276,9 @@ atualizar_tabuleiro(COR, move(TIPO, LinhaInicial, takes, ColunaFinal, LinhaFinal
 
     TIPO = 'R', validar_torre_takes(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)).
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
+    true.
 
 atualizar_tabuleiro(COR, CASTLE) :-
     COR = 'w',
@@ -241,6 +306,90 @@ atualizar_tabuleiro(COR, CASTLE) :-
     assertz(posicao('K', COR, c, 8)), assertz(posicao('R', COR, d, 8));
 
     true.
+
+% movimentos com check ou checkmate
+atualizar_tabuleiro(COR, move(TIPO, ColunaFinal, LinhaFinal, A)) :-
+    A = check, TIPO = w, atualizar_tabuleiro(COR, move(TIPO, ColunaFinal, LinhaFinal)),
+    print('PRETAS em CHECK.'), nl;
+
+    A = check, TIPO = b, atualizar_tabuleiro(COR, move(TIPO, ColunaFinal, LinhaFinal)),
+    print('BRANCAS em CHECK.'), nl;
+
+    A = checkmate, TIPO = w, atualizar_tabuleiro(COR, move(TIPO, ColunaFinal, LinhaFinal)),
+    print('PRETAS em CHECKMATE. BRANCAS GANHAM'), nl, print('Pontuação -> 1-0');
+
+    A = checkmate, TIPO = b, atualizar_tabuleiro(COR, move(TIPO, ColunaFinal, LinhaFinal)),
+    print('BRANCAS em CHECKMATE. PRETAS GANHAM'), nl, print('Pontuação -> 0-1');
+
+    true.
+
+% movimentos de peças com check ou checkmate em que haja a eventualidade de escolher a peça que está na coluna x
+atualizar_tabuleiro(COR, move(TIPO, ColunaInicial, ColunaFinal, LinhaFinal, A)) :-
+    A = check, TIPO = w, atualizar_tabuleiro(COR, move(TIPO, ColunaInicial, ColunaFinal, LinhaFinal)),
+    print('PRETAS em CHECK.'), nl;
+
+    A = check, TIPO = b, atualizar_tabuleiro(COR, move(TIPO, ColunaInicial, ColunaFinal, LinhaFinal)),
+    print('BRANCAS em CHECK.'), nl;
+
+    A = checkmate, TIPO = w, atualizar_tabuleiro(COR, move(TIPO, ColunaInicial, ColunaFinal, LinhaFinal)),
+    print('PRETAS em CHECKMATE. BRANCAS GANHAM'), nl, print('Pontuação -> 1-0');
+
+    A = checkmate, TIPO = b, atualizar_tabuleiro(COR, move(TIPO, ColunaInicial, ColunaFinal, LinhaFinal)),
+    print('BRANCAS em CHECKMATE. PRETAS GANHAM'), nl, print('Pontuação -> 0-1');
+    
+    true.
+
+% movimentos de peças com check ou checkmate em que haja a eventualidade de escolher a peça que está na linha x
+atualizar_tabuleiro(COR, move(TIPO, LinhaInicial, ColunaFinal, LinhaFinal, A)) :-
+    A = check, TIPO = w, atualizar_tabuleiro(COR, move(TIPO, LinhaInicial, ColunaFinal, LinhaFinal)),
+    print('PRETAS em CHECK.'), nl;
+
+    A = check, TIPO = b, atualizar_tabuleiro(COR, move(TIPO, LinhaInicial, ColunaFinal, LinhaFinal)),
+    print('BRANCAS em CHECK.'), nl;
+
+    A = checkmate, TIPO = w, atualizar_tabuleiro(COR, move(TIPO, LinhaInicial, ColunaFinal, LinhaFinal)),
+    print('PRETAS em CHECKMATE. BRANCAS GANHAM'), nl, print('Pontuação -> 1-0');
+
+    A = checkmate, TIPO = b, atualizar_tabuleiro(COR, move(TIPO, LinhaInicial, ColunaFinal, LinhaFinal)),
+    print('BRANCAS em CHECKMATE. PRETAS GANHAM'), nl, print('Pontuação -> 0-1');
+
+    true.
+
+% movimentos de peças com take e check ou checkmate em que haja a eventualidade de escolher a peça que está na coluna x
+atualizar_tabuleiro(COR, move(TIPO, ColunaInicial, takes, ColunaFinal, LinhaFinal, A)) :-
+    A = check, TIPO = w, atualizar_tabuleiro(COR, move(TIPO, ColunaInicial, takes, ColunaFinal, LinhaFinal)),
+    print('PRETAS em CHECK.'), nl;
+
+    A = check, TIPO = b, atualizar_tabuleiro(COR, move(TIPO, ColunaInicial, takes, ColunaFinal, LinhaFinal)),
+    print('BRANCAS em CHECK.'), nl;
+
+    A = checkmate, TIPO = w, atualizar_tabuleiro(COR, move(TIPO, ColunaInicial, takes, ColunaFinal, LinhaFinal)),
+    print('PRETAS em CHECKMATE. BRANCAS GANHAM'), nl, print('Pontuação -> 1-0');
+
+    A = checkmate, TIPO = b, atualizar_tabuleiro(COR, move(TIPO, ColunaInicial, takes, ColunaFinal, LinhaFinal)),
+    print('BRANCAS em CHECKMATE. PRETAS GANHAM'), nl, print('Pontuação -> 0-1');
+
+    true.
+
+% movimentos de peças com take e check ou checkmate em que haja a eventualidade de escolher a peça que está na linha x
+atualizar_tabuleiro(COR, move(TIPO, LinhaInicial, takes, ColunaFinal, LinhaFinal, A)) :-
+    A = check, TIPO = w, atualizar_tabuleiro(COR, move(TIPO, LinhaInicial, takes, ColunaFinal, LinhaFinal)),
+    print('PRETAS em CHECK.'), nl;
+
+    A = check, TIPO = b, atualizar_tabuleiro(COR, move(TIPO, LinhaInicial, takes, ColunaFinal, LinhaFinal)),
+    print('BRANCAS em CHECK.'), nl;
+
+    A = checkmate, TIPO = w, atualizar_tabuleiro(COR, move(TIPO, LinhaInicial, takes, ColunaFinal, LinhaFinal)),
+    print('PRETAS em CHECKMATE. BRANCAS GANHAM'), nl, print('Pontuação -> 1-0');
+
+    A = checkmate, TIPO = b, atualizar_tabuleiro(COR, move(TIPO, LinhaInicial, takes, ColunaFinal, LinhaFinal)),
+    print('BRANCAS em CHECKMATE. PRETAS GANHAM'), nl, print('Pontuação -> 0-1');
+    
+    true.
+
+% resultados
+atualizar_tabuleiro(_, R) :-
+    fim(R); true.
 
 validar_peao(COR, Coluna, LinhaFinal) :-
     COR = w, posicao('P', COR, Coluna, LinhaAtual), \+ posicao(_, _, Coluna, LinhaFinal),
@@ -356,18 +505,18 @@ validar_bispo_takes(COR, P, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial
     \+ posicao('K', _, ColunaFinal, LinhaFinal), posicao(_, w, ColunaFinal, LinhaFinal).
 
 validar_torre(COR, P, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial) :-
-    posicao(P, COR, ColunaFinal, LinhaInicial), posicao(P, COR, ColunaInicial, LinhaInicial), LinhaInicial #< LinhaFinal,
-    LI is LinhaInicial + 1, LF is LinhaFinal - 1, forall(between(LI, LF, L), \+ posicao(_, _, ColunaInicial, L));
-    posicao(P, COR, ColunaFinal, LinhaInicial), posicao(P, COR, ColunaInicial, LinhaInicial), LinhaInicial #> LinhaFinal,
-    LI is LinhaInicial - 1, LF is LinhaFinal + 1, forall(between(LF, LI, L), \+ posicao(_, _, ColunaInicial, L));
-
     posicao(P, COR, ColunaInicial, LinhaFinal), posicao(P, COR, ColunaInicial, LinhaInicial), coluna(ColunaInicial, ColunaInicialInt),
     coluna(ColunaFinal, ColunaFinalInt), ColunaInicialInt #< ColunaFinalInt, CIInt is ColunaInicialInt + 1, CFInt is ColunaFinalInt - 1,
     forall(between(CIInt, CFInt, C), (coluna(CC, C), \+ posicao(_, _, CC, LinhaInicial)));
 
     posicao(P, COR, ColunaInicial, LinhaFinal), posicao(P, COR, ColunaInicial, LinhaInicial), coluna(ColunaInicial, ColunaInicialInt),
     coluna(ColunaFinal, ColunaFinalInt), ColunaInicialInt #> ColunaFinalInt, CIInt is ColunaInicialInt - 1, CFInt is ColunaFinalInt + 1,
-    forall(between(CFInt, CIInt, C), (coluna(CC, C), \+ posicao(_, _, CC, LinhaInicial))).
+    forall(between(CFInt, CIInt, C), (coluna(CC, C), \+ posicao(_, _, CC, LinhaInicial)));
+
+    posicao(P, COR, ColunaFinal, LinhaInicial), posicao(P, COR, ColunaInicial, LinhaInicial), LinhaInicial #< LinhaFinal,
+    LI is LinhaInicial + 1, LF is LinhaFinal - 1, forall(between(LI, LF, L), \+ posicao(_, _, ColunaInicial, L));
+    posicao(P, COR, ColunaFinal, LinhaInicial), posicao(P, COR, ColunaInicial, LinhaInicial), LinhaInicial #> LinhaFinal,
+    LI is LinhaInicial - 1, LF is LinhaFinal + 1, forall(between(LF, LI, L), \+ posicao(_, _, ColunaInicial, L)).
 
 validar_torre_takes(COR, P, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial) :-
     COR = w, validar_torre(COR, P, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
