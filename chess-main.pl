@@ -99,11 +99,11 @@ init :-
 jogar :-
     ler_linha(jogada(B, P)),
 
-    print(B), nl,
+    print(B), print(' -> brancas'), nl,
     atualizar_tabuleiro(w, B),
     mostrar_tabuleiro,
 
-    print(P), nl,
+    print(P), print(' -> pretas'), nl,
     atualizar_tabuleiro(b, P),
     mostrar_tabuleiro,
 
@@ -148,6 +148,23 @@ atualizar_tabuleiro(COR, move(TIPO, ColunaFinal, LinhaFinal)) :-
 
     true.
 
+% movimentos de peças em que haja a eventualidade de escolher a peça que está na coluna x
+atualizar_tabuleiro(COR, move(TIPO, ColunaInicial, ColunaFinal, LinhaFinal)) :-
+    TIPO = 'N', validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
+    TIPO = 'R', validar_torre(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)).
+
+% movimentos de peças em que haja a eventualidade de escolher a peça que está na linha x
+atualizar_tabuleiro(COR, move(TIPO, LinhaInicial, ColunaFinal, LinhaFinal)) :-
+    TIPO = 'N', validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
+    TIPO = 'R', validar_torre(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)).
+
+
 % movimentos de peões com take
 atualizar_tabuleiro(COR, move(TIPO, ColunaInicial, takes, ColunaFinal, LinhaFinal)) :-
     validar_peao_takes(COR, ColunaInicial, ColunaFinal, LinhaFinal, LinhaInicial),
@@ -175,6 +192,26 @@ atualizar_tabuleiro(COR, move(TIPO, takes, ColunaFinal, LinhaFinal)) :-
     assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
 
     TIPO = 'K', validar_rei_takes(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)).
+
+% movimentos de peças com take em que haja a eventualidade de escolher a peça que está na coluna x
+atualizar_tabuleiro(COR, move(TIPO, ColunaInicial, takes, ColunaFinal, LinhaFinal)) :-
+    TIPO = 'N', validar_cavalo_takes(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
+    TIPO = 'R', validar_torre_takes(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)).
+
+% movimentos de peças com take em que haja a eventualidade de escolher a peça que está na linha x
+atualizar_tabuleiro(COR, move(TIPO, LinhaInicial, takes, ColunaFinal, LinhaFinal)) :-
+    TIPO = 'N', validar_cavalo_takes(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
+    TIPO = 'R', validar_torre_takes(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
     assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)).
 
