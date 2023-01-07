@@ -4,6 +4,7 @@
 :- initialization(comando).
 
 :- dynamic(posicao/4).
+:- dynamic(jogadas_ilegais/1).
 
 % usar o predicado argument_list(LISTA) para ver os argumentos dados
 % e direcionar para o formato pretendido as acções
@@ -19,8 +20,6 @@ gets(S) :- get0(C), gets([], C, S).
 gets(S, 10, S).		% 10 é o newline
 gets(S, -1, S).		% -1 é o end-of-file
 gets(I, C, [C|O]) :- get0(CC), gets(I, CC, O).
-
-unload_file(FILENAME) :- seeing(FILENAME), seen.
 
 init_posicoes :- 
     retractall(posicao(_, _, _, _)),
@@ -55,7 +54,10 @@ init_posicoes :-
     assertz(posicao('N', b, b, 8)),
     assertz(posicao('N', b, g, 8)),
     assertz(posicao('B', b, c, 8)),
-    assertz(posicao('B', b, f, 8)).
+    assertz(posicao('B', b, f, 8)),
+    
+    retractall(jogadas_ilegais(_)),
+    assertz(jogadas_ilegais(0)).
 
 mostrar_tabuleiro :-
     forall(between(1, 8, L), (linha(L, LL), write(LL), mostrar_linha(LL))), write('  a  b  c  d  e  f  g  h'), nl.
@@ -69,7 +71,6 @@ mostrar_posicao(C, L) :-
     coluna(COLUNA, C),
     LINHA = L,
     desenho(TIPO, COR, P),
-    
     write(P), write(' ').
 
 mostrar_posicao(_, _) :- write('  ').
@@ -115,37 +116,46 @@ init :-
     mostrar_tabuleiro. */
 
 jogar :-
-    ler_linha(jogada(B, P)),
-
-    print(B), print(' -> brancas'), nl,
-    atualizar_tabuleiro(w, B),
-    mostrar_tabuleiro,
-
-    print(P), print(' -> pretas'), nl,
-    atualizar_tabuleiro(b, P),
-    mostrar_tabuleiro,
-
-    jogar;
+    jogadas_ilegais(N), N #<3,
 
     ler_linha(jogada(B, P, R)),
 
-    print(B), print(' -> brancas'), nl,
-    atualizar_tabuleiro(w, B),
+    mostrar_jogada(w, B),
+    atualizar_tabuleiro(w, B), nl,
     mostrar_tabuleiro,
 
-    print(P), print(' -> pretas'), nl,
-    atualizar_tabuleiro(b, P),
+    nl, mostrar_jogada(b, P), 
+    atualizar_tabuleiro(b, P), nl,
     mostrar_tabuleiro,
 
-    print(R), nl,
-    atualizar_tabuleiro(b, R),
-    mostrar_tabuleiro,
+    nl, fim(R),
 
-    jogar. 
+    jogar; nl, print('O máximo de jogadas ILEGAIS foi alcançado.'), nl, abort.
 
 ler_linha(X) :-
     gets(L),
     phrase(lj(X), L, []).
+
+mostrar_jogada(COR, JOGADA) :-
+    JOGADA = 'BRANCAS GANHAM', fim(JOGADA);
+    JOGADA = 'PRETAS GANHA', fim(JOGADA);
+    JOGADA = 'EMPATE', fim(JOGADA);
+    COR = w, print('brancas  -> '), print(JOGADA);
+    COR = b, print('pretas -> '), print(JOGADA); true.
+
+% Contador de jogadas ilegais
+ilegal :-
+    jogadas_ilegais(N),
+    NN is N + 1,
+    retractall(jogadas_ilegais(N)),
+    assertz(jogadas_ilegais(NN)).
+    
+
+fim(R) :-
+    R = 'BRANCAS GANHAM', print(R), nl, mostrar_tabuleiro, abort;
+    R = 'PRETAS GANHAM', print(R), nl, mostrar_tabuleiro, abort;
+    R = 'EMPATE', print(R), nl, mostrar_tabuleiro, abort;
+    true.
 
 % movimentos básicos
 atualizar_tabuleiro(COR, movimento(TIPO, ColunaFinal, LinhaFinal)) :-
@@ -180,21 +190,19 @@ atualizar_tabuleiro(COR, movimento(TIPO, ColunaFinal, LinhaFinal)) :-
     \+ posicao(_, _, ColunaFinal, LinhaFinal), retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)),
     assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
 
-    true.
+    print(' --> jogada ILEGAL.'), ilegal, true.
 
 % movimentos de peões com take
-atualizar_tabuleiro(COR, movimento(TIPO, ColunaInicial, captura, ColunaFinal, LinhaFinal)) :-
+atualizar_tabuleiro(COR, movimento('P', ColunaInicial, captura, ColunaFinal, LinhaFinal)) :-
     validar_peao_captura(COR, ColunaInicial, ColunaFinal, LinhaFinal, LinhaInicial),
-    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
-
-    true.
+    retract(posicao('P', COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
+    assertz(posicao('P', COR, ColunaFinal, LinhaFinal)); print(' --> jogada ILEGAL.'), ilegal, true.
 
 % movimentos de peões com take e xeque ou xeque-mate
 atualizar_tabuleiro(COR, movimento(TIPO, ColunaInicial, captura, ColunaFinal, LinhaFinal, A)) :-
-    validar_peao_captura(COR, ColunaInicial, ColunaFinal, LinhaFinal, LinhaInicial),
+    validar_peao_captura(COR, ColunaInicial, ColunaFinal, LinhaFinal, LinhaInicial), em_xeque(COR, A),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)), 
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, A); true.
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)); print(' --> jogada ILEGAL.'), ilegal, true.
 
 % movimentos do resto das peças com take
 atualizar_tabuleiro(COR, movimento(TIPO, captura, ColunaFinal, LinhaFinal)) :-
@@ -218,67 +226,63 @@ atualizar_tabuleiro(COR, movimento(TIPO, captura, ColunaFinal, LinhaFinal)) :-
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
     assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
     
-    true.
+    print(' --> jogada ILEGAL.'), ilegal, true.
 
-% movimentos do resto das peças com xeque ou xeque-mate
+% movimentos do resto das peças com xeque
 atualizar_tabuleiro(COR, movimento(TIPO, ColunaFinal, LinhaFinal, xeque)) :-
-    TIPO = 'N', validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    TIPO = 'N', validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial), em_xeque(COR, xeque),
     \+ posicao(_, _, ColunaFinal, LinhaFinal), retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, xeque);
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
+    TIPO = 'B', validar_bispo(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial), em_xeque(COR, xeque),
+    \+ posicao(_, _, ColunaFinal, LinhaFinal), retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)),
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
+    TIPO = 'R',validar_torre(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial), em_xeque(COR, xeque),
+    \+ posicao(_, _, ColunaFinal, LinhaFinal), retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)),
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
+    TIPO = 'Q', validar_rainha(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial), em_xeque(COR, xeque),
+    \+ posicao(_, _, ColunaFinal, LinhaFinal), retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)),
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
+    print(' --> jogada ILEGAL.'), ilegal, true.
+
+% movimentos do resto das peças com xeque-mate
+atualizar_tabuleiro(COR, move(TIPO, ColunaFinal, LinhaFinal, 'xeque-mate')) :-
+    TIPO = 'N', validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    \+ posicao(_, _, ColunaFinal, LinhaFinal), em_xeque(COR, 'xeque-mate');
 
     TIPO = 'B', validar_bispo(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
-    \+ posicao(_, _, ColunaFinal, LinhaFinal), retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, xeque);
+    \+ posicao(_, _, ColunaFinal, LinhaFinal), em_xeque(COR, 'xeque-mate');
 
     TIPO = 'R',validar_torre(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
-    \+ posicao(_, _, ColunaFinal, LinhaFinal), retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, xeque);
+    \+ posicao(_, _, ColunaFinal, LinhaFinal), em_xeque(COR, 'xeque-mate');
 
     TIPO = 'Q', validar_rainha(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
-    \+ posicao(_, _, ColunaFinal, LinhaFinal), retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, xeque);
+    \+ posicao(_, _, ColunaFinal, LinhaFinal), em_xeque(COR, 'xeque-mate');
 
-    true.
-
-% movimentos do resto das peças com xeque ou xeque-mate
-atualizar_tabuleiro(COR, movimento(TIPO, ColunaFinal, LinhaFinal, xeque-mate)) :-
-    TIPO = 'N', validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
-    \+ posicao(_, _, ColunaFinal, LinhaFinal), retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, xeque-mate);
-
-    TIPO = 'B', validar_bispo(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
-    \+ posicao(_, _, ColunaFinal, LinhaFinal), retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, xeque-mate);
-
-    TIPO = 'R',validar_torre(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
-    \+ posicao(_, _, ColunaFinal, LinhaFinal), retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, xeque-mate);
-
-    TIPO = 'Q', validar_rainha(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
-    \+ posicao(_, _, ColunaFinal, LinhaFinal), retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, xeque-mate);
-
-    true.
+    print(' --> jogada ILEGAL.'), ilegal, true.
 
 % movimentos do resto das peças com take e xeque ou xeque-mate
 atualizar_tabuleiro(COR, movimento(TIPO, captura, ColunaFinal, LinhaFinal, A)) :-
-    TIPO = 'N', validar_cavalo_captura(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    TIPO = 'N', validar_cavalo_captura(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial), em_xeque(COR, A),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, A);
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
 
-    TIPO = 'B', validar_bispo_captura(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    TIPO = 'B', validar_bispo_captura(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial), em_xeque(COR, A),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, A);
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
 
-    TIPO = 'R', validar_torre_captura(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    TIPO = 'R', validar_torre_captura(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial), em_xeque(COR, A),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, A);
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
 
-    TIPO = 'Q', validar_rainha_captura(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    TIPO = 'Q', validar_rainha_captura(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial), em_xeque(COR, A),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, A);
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
 
-    true.
+    print(' --> jogada ILEGAL.'), ilegal, true.
 
 % movimentos de peças em que haja a eventualidade de escolher a peça que está na coluna x
 atualizar_tabuleiro(COR, movimento(TIPO, ColunaInicial, ColunaFinal, LinhaFinal)) :-
@@ -288,7 +292,7 @@ atualizar_tabuleiro(COR, movimento(TIPO, ColunaInicial, ColunaFinal, LinhaFinal)
     TIPO = 'R', validar_torre(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
 
-    true.
+    ilegal, true.
 
 % movimentos de peças em que haja a eventualidade de escolher a peça que está na linha x
 atualizar_tabuleiro(COR, movimento(TIPO, LinhaInicial, ColunaFinal, LinhaFinal)) :-
@@ -298,7 +302,7 @@ atualizar_tabuleiro(COR, movimento(TIPO, LinhaInicial, ColunaFinal, LinhaFinal))
     TIPO = 'R', validar_torre(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
 
-    true.
+    print(' --> jogada ILEGAL.'), ilegal, true.
 
 % movimentos de peças com take em que haja a eventualidade de escolher a peça que está na coluna x
 atualizar_tabuleiro(COR, movimento(TIPO, ColunaInicial, captura, ColunaFinal, LinhaFinal)) :-
@@ -310,7 +314,7 @@ atualizar_tabuleiro(COR, movimento(TIPO, ColunaInicial, captura, ColunaFinal, Li
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
     assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
 
-    true.
+    print(' --> jogada ILEGAL.'), ilegal, true.
 
 % movimentos de peças com take em que haja a eventualidade de escolher a peça que está na linha x
 atualizar_tabuleiro(COR, movimento(TIPO, LinhaInicial, captura, ColunaFinal, LinhaFinal)) :-
@@ -322,54 +326,54 @@ atualizar_tabuleiro(COR, movimento(TIPO, LinhaInicial, captura, ColunaFinal, Lin
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
     assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
 
-    true.
+    print(' --> jogada ILEGAL.'), ilegal, true.
 
 % movimentos de peças com take e xeque ou xeque-mate em que haja a eventualidade de escolher a peça que está na coluna x
 atualizar_tabuleiro(COR, movimento(TIPO, ColunaInicial, ColunaFinal, LinhaFinal, A)) :-
-    TIPO = 'N', validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    TIPO = 'N', validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial), em_xeque(COR, A),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, A);
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
 
-    TIPO = 'R', validar_torre(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    TIPO = 'R', validar_torre(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial), em_xeque(COR, A),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, A);
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
 
-    true.
+    print(' --> jogada ILEGAL.'), ilegal, true.
 
 % movimentos de peças com xeque ou xeque-mate em que haja a eventualidade de escolher a peça que está na linha x
 atualizar_tabuleiro(COR, movimento(TIPO, LinhaInicial, ColunaFinal, LinhaFinal, A)) :-
-    TIPO = 'N', validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    TIPO = 'N', validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial), em_xeque(COR, A),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, A);
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
 
-    TIPO = 'R',validar_torre(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    TIPO = 'R',validar_torre(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial), em_xeque(COR, A),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, A);
-    true.
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+    print(' --> jogada ILEGAL.'), ilegal, true.
 
 % movimentos de peças com take e xeque ou xeque-mate em que haja a eventualidade de escolher a peça que está na coluna x
 atualizar_tabuleiro(COR, movimento(TIPO, ColunaInicial, captura, ColunaFinal, LinhaFinal, A)) :-
-    TIPO = 'N', validar_cavalo_captura(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    TIPO = 'N', validar_cavalo_captura(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial), em_xeque(COR, A),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, A);
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
 
-    TIPO = 'R', validar_torre_captura(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    TIPO = 'R', validar_torre_captura(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial), em_xeque(COR, A),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, A);
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
 
-    true.
+    print(' --> jogada ILEGAL.'), ilegal, true.
 
 % movimentos de peças com take e xeque ou xeque-mate em que haja a eventualidade de escolher a peça que está na linha x
 atualizar_tabuleiro(COR, movimento(TIPO, LinhaInicial, captura, ColunaFinal, LinhaFinal, A)) :-
-    TIPO = 'N', validar_cavalo_captura(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    TIPO = 'N', validar_cavalo_captura(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial), em_xeque(COR, A),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, A);
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
 
-    TIPO = 'R', validar_torre_captura(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
+    TIPO = 'R', validar_torre_captura(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial), em_xeque(COR, A),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)), em_xeque(COR, A);
+    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
 
-    true.
+    print(' --> jogada ILEGAL.'), ilegal, true.
 
 atualizar_tabuleiro(COR, CASTLE) :-
     COR = 'w',
@@ -395,15 +399,19 @@ atualizar_tabuleiro(COR, CASTLE) :-
     validar_roque_longo(COR),
     retract(posicao('K', COR, e, 8)), retract(posicao('R', COR, a, 8)),
     assertz(posicao('K', COR, c, 8)), assertz(posicao('R', COR, d, 8));
+    print(' --> jogada ILEGAL.'), ilegal.
 
-    true.
+% atualizar_tabuleiro(_, 'BRANCAS GANHAM') :- abort.
+% atualizar_tabuleiro(_, 'PRETAS GANHAM') :- abort.
+% atualizar_tabuleiro(_, 'EMPATE') :- abort.
 
-em_xeque(COR, XEQUE) :-
-    COR = w, XEQUE = xeque, print('PRETAS em XEQUE'), nl;
-    COR = b, XEQUE = xeque, print('BRANCAS em XEQUE'), nl;
+em_xeque(COR, xeque) :-
+    COR = w, print(' --> PRETAS em XEQUE'), nl;
+    COR = b, print(' --> BRANCAS em XEQUE'), nl.
 
-    COR = w, XEQUE = xeque-mate, print('PRETAS em XEQUE-MATE'), nl;
-    COR = b, XEQUE = xeque-mate, print('BRANCAS em XEQUE-MATE'), nl.
+em_xeque(COR, 'xeque-mate') :-
+    COR = w, print('PRETAS em XEQUE-MATE'), nl, fim('BRANCAS GANHAM');
+    COR = b, print('BRANCAS em XEQUE-MATE'), nl, fim('PRETAS GANHAM').
 
 validar_peao(COR, Coluna, LinhaFinal) :-
     COR = w, posicao('P', COR, Coluna, LinhaAtual), \+ posicao(_, _, Coluna, LinhaFinal),
