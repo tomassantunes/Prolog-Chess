@@ -5,6 +5,7 @@
 
 :- dynamic(posicao/4).
 :- dynamic(jogadas_ilegais/1).
+:- dynamic(en_passant_peao/2).
 
 % usar o predicado argument_list(LISTA) para ver os argumentos dados
 % e direcionar para o formato pretendido as acções
@@ -57,7 +58,8 @@ init_posicoes :-
     assertz(posicao('B', b, f, 8)),
     
     retractall(jogadas_ilegais(_)),
-    assertz(jogadas_ilegais(0)).
+    assertz(jogadas_ilegais(0)),
+    retractall(en_passant_peao(_, _)).
 
 mostrar_tabuleiro :-
     forall(between(1, 8, L), (linha(L, LL), write(LL), mostrar_linha(LL))), write('  a  b  c  d  e  f  g  h'), nl.
@@ -109,11 +111,7 @@ coluna(h, 8).
 init :-
     init_posicoes,
     mostrar_tabuleiro,
-    jogar. 
-
-/* init :-
-    init_posicoes,
-    mostrar_tabuleiro. */
+    jogar.
 
 jogar :-
     jogadas_ilegais(N), N #<3,
@@ -134,11 +132,11 @@ jogar :-
 
 ler_linha(X) :-
     gets(L),
-    phrase(lj(X), L, []).
+    phrase(algebrica(X), L, []).
 
 mostrar_jogada(COR, JOGADA) :-
     JOGADA = 'BRANCAS GANHAM', fim(JOGADA);
-    JOGADA = 'PRETAS GANHA', fim(JOGADA);
+    JOGADA = 'PRETAS GANHAM', fim(JOGADA);
     JOGADA = 'EMPATE', fim(JOGADA);
     COR = w, print('brancas  -> '), print(JOGADA);
     COR = b, print('pretas -> '), print(JOGADA); true.
@@ -150,20 +148,31 @@ ilegal :-
     retractall(jogadas_ilegais(N)),
     assertz(jogadas_ilegais(NN)).
     
-
 fim(R) :-
     R = 'BRANCAS GANHAM', print(R), nl, mostrar_tabuleiro, abort;
     R = 'PRETAS GANHAM', print(R), nl, mostrar_tabuleiro, abort;
     R = 'EMPATE', print(R), nl, mostrar_tabuleiro, abort;
     true.
 
+% verificar se o peão pode ser promovido para uma rainha
+promocao(COR, LinhaFinal) :-
+    COR = w, LinhaFinal = 8;
+    COR = b, LinhaFinal = 1.
+
 % movimentos básicos
 atualizar_tabuleiro(COR, movimento(TIPO, ColunaFinal, LinhaFinal)) :-
     TIPO = 'P',
-    validar_peao(COR, ColunaFinal, LinhaFinal),
-    posicao(TIPO, COR, ColunaFinal, _),
-    retract(posicao(TIPO, COR, ColunaFinal, _)),
+    validar_peao(COR, LinhaInicial, ColunaFinal, LinhaFinal),
+    posicao(TIPO, COR, ColunaFinal, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaFinal, LinhaInicial)),
     assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+
+    TIPO = 'P',
+    validar_peao(COR, LinhaInicial, ColunaFinal, LinhaFinal),
+    promocao(COR, LinhaFinal),
+    posicao(TIPO, COR, ColunaFinal, LinhaInicial),
+    retract(posicao(TIPO, COR, ColunaFinal, LinhaInicial)),
+    assertz(posicao('Q', COR, ColunaFinal, LinhaFinal));
 
     TIPO = 'N',
     validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
@@ -194,15 +203,31 @@ atualizar_tabuleiro(COR, movimento(TIPO, ColunaFinal, LinhaFinal)) :-
 
 % movimentos de peões com take
 atualizar_tabuleiro(COR, movimento('P', ColunaInicial, captura, ColunaFinal, LinhaFinal)) :-
-    validar_peao_captura(COR, ColunaInicial, ColunaFinal, LinhaFinal, LinhaInicial),
+    validar_peao_captura(COR, ColunaInicial, LinhaInicial, ColunaFinal, LinhaFinal),
     retract(posicao('P', COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
-    assertz(posicao('P', COR, ColunaFinal, LinhaFinal)); print(' --> jogada ILEGAL.'), ilegal, true.
+    assertz(posicao('P', COR, ColunaFinal, LinhaFinal)); 
+
+    validar_peao_captura(COR, ColunaInicial, LinhaInicial, ColunaFinal, LinhaFinal), promocao(COR, LinhaFinal),
+    retract(posicao('P', COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
+    assertz(posicao('Q', COR, ColunaFinal, LinhaFinal));
+    
+    validar_en_passant_peao(COR, ColunaInicial, LinhaInicial, ColunaFinal, LinhaFinal),
+    retract(posicao('P', COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaInicial)),
+    retract(en_passant_peao(ColunaFinal, _)), assertz(posicao('P', COR, ColunaFinal, LinhaFinal));
+
+    print(' --> jogada ILEGAL.'), ilegal, true.
 
 % movimentos de peões com take e xeque ou xeque-mate
-atualizar_tabuleiro(COR, movimento(TIPO, ColunaInicial, captura, ColunaFinal, LinhaFinal, A)) :-
-    validar_peao_captura(COR, ColunaInicial, ColunaFinal, LinhaFinal, LinhaInicial), em_xeque(COR, A),
-    retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)), 
-    assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal)); print(' --> jogada ILEGAL.'), ilegal, true.
+atualizar_tabuleiro(COR, movimento('P', ColunaInicial, captura, ColunaFinal, LinhaFinal, A)) :-
+    validar_peao_captura(COR, ColunaInicial, LinhaInicial, ColunaFinal, LinhaFinal), em_xeque(COR, A),
+    retract(posicao('P', COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)), 
+    assertz(posicao('P', COR, ColunaFinal, LinhaFinal)); print(' --> jogada ILEGAL.'), ilegal, true.
+
+% movimentos de peões com xeque ou xeque-mate
+atualizar_tabuleiro(COR, movimento('P', ColunaInicial, LinhaFinal, A)) :-
+    validar_peao(COR, LinhaInicial, ColunaFinal, LinhaFinal), em_xeque(COR, A),
+    retract(posicao('P', COR, ColunaInicial, LinhaInicial)), assertz(posicao('P', COR, ColunaFinal, LinhaFinal)); 
+    print(' --> jogada ILEGAL.'), ilegal, true.
 
 % movimentos do resto das peças com take
 atualizar_tabuleiro(COR, movimento(TIPO, captura, ColunaFinal, LinhaFinal)) :-
@@ -292,7 +317,7 @@ atualizar_tabuleiro(COR, movimento(TIPO, ColunaInicial, ColunaFinal, LinhaFinal)
     TIPO = 'R', validar_torre(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
 
-    ilegal, true.
+    print(' --> jogada ILEGAL.'), ilegal, true.
 
 % movimentos de peças em que haja a eventualidade de escolher a peça que está na linha x
 atualizar_tabuleiro(COR, movimento(TIPO, LinhaInicial, ColunaFinal, LinhaFinal)) :-
@@ -349,6 +374,7 @@ atualizar_tabuleiro(COR, movimento(TIPO, LinhaInicial, ColunaFinal, LinhaFinal, 
     TIPO = 'R',validar_torre(COR, TIPO, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial), em_xeque(COR, A),
     retract(posicao(TIPO, COR, ColunaInicial, LinhaInicial)), retract(posicao(_, _, ColunaFinal, LinhaFinal)),
     assertz(posicao(TIPO, COR, ColunaFinal, LinhaFinal));
+    
     print(' --> jogada ILEGAL.'), ilegal, true.
 
 % movimentos de peças com take e xeque ou xeque-mate em que haja a eventualidade de escolher a peça que está na coluna x
@@ -399,11 +425,8 @@ atualizar_tabuleiro(COR, CASTLE) :-
     validar_roque_longo(COR),
     retract(posicao('K', COR, e, 8)), retract(posicao('R', COR, a, 8)),
     assertz(posicao('K', COR, c, 8)), assertz(posicao('R', COR, d, 8));
+    
     print(' --> jogada ILEGAL.'), ilegal.
-
-% atualizar_tabuleiro(_, 'BRANCAS GANHAM') :- abort.
-% atualizar_tabuleiro(_, 'PRETAS GANHAM') :- abort.
-% atualizar_tabuleiro(_, 'EMPATE') :- abort.
 
 em_xeque(COR, xeque) :-
     COR = w, print(' --> PRETAS em XEQUE'), nl;
@@ -413,20 +436,26 @@ em_xeque(COR, 'xeque-mate') :-
     COR = w, print('PRETAS em XEQUE-MATE'), nl, fim('BRANCAS GANHAM');
     COR = b, print('BRANCAS em XEQUE-MATE'), nl, fim('PRETAS GANHAM').
 
-validar_peao(COR, Coluna, LinhaFinal) :-
-    COR = w, posicao('P', COR, Coluna, LinhaAtual), \+ posicao(_, _, Coluna, LinhaFinal),
-    LinhaAtual #= 2, LinhaFinal - LinhaAtual =< 2;
+validar_peao(COR, LinhaInicial, Coluna, LinhaFinal) :-
+    COR = w, posicao('P', COR, Coluna, LinhaInicial), \+ posicao(_, _, Coluna, LinhaFinal),
+    LinhaInicial #= 2, LinhaFinal - LinhaInicial #= 2, assertz(en_passant_peao(Coluna, LinhaFinal));
 
-    COR = w, posicao('P', COR, Coluna, LinhaAtual), \+ posicao(_, _, Coluna, LinhaFinal),
-    LinhaAtual #\= 2, LinhaFinal - LinhaAtual #=1;
+    COR = w, posicao('P', COR, Coluna, LinhaInicial), \+ posicao(_, _, Coluna, LinhaFinal),
+    LinhaInicial #= 2, LinhaFinal - LinhaInicial #= 1;
 
-    COR = b, posicao('P', COR, Coluna, LinhaAtual), \+ posicao(_, _, Coluna, LinhaFinal),
-    LinhaAtual #= 7, LinhaAtual - LinhaFinal =< 2;
+    COR = w, posicao('P', COR, Coluna, LinhaInicial), \+ posicao(_, _, Coluna, LinhaFinal),
+    LinhaInicial #\= 2, LinhaFinal - LinhaInicial #=1;
+    
+    COR = b, posicao('P', COR, Coluna, LinhaInicial), \+ posicao(_, _, Coluna, LinhaFinal),
+    LinhaInicial #= 7, LinhaInicial - LinhaFinal #= 2, assertz(en_passant_peao(Coluna, LinhaFinal));
 
-    COR = b, posicao('P', COR, Coluna, LinhaAtual), \+ posicao(_, _, Coluna, LinhaFinal),
-    LinhaAtual #\= 7, LinhaAtual - LinhaFinal #= 1.
+    COR = b, posicao('P', COR, Coluna, LinhaInicial), \+ posicao(_, _, Coluna, LinhaFinal),
+    LinhaInicial #= 7, LinhaInicial - LinhaFinal #= 1;
 
-validar_peao_captura(COR, ColunaInicial, ColunaFinal, LinhaFinal, LinhaInicial) :-
+    COR = b, posicao('P', COR, Coluna, LinhaInicial), \+ posicao(_, _, Coluna, LinhaFinal),
+    LinhaInicial #\= 7, LinhaInicial - LinhaFinal #= 1.
+
+validar_peao_captura(COR, ColunaInicial, LinhaInicial, ColunaFinal, LinhaFinal) :-
     COR = w, posicao('P', COR, ColunaInicial, LinhaInicial), \+ posicao('K', _, ColunaFinal, LinhaFinal), posicao(_, b, ColunaFinal, LinhaFinal),
     coluna(ColunaFinal, ColunaFinalInt), ColunaInicialInt is ColunaFinalInt - 1, coluna(ColunaInicial, ColunaInicialInt),
     LinhaInicial #= LinhaFinal - 1;
@@ -443,6 +472,27 @@ validar_peao_captura(COR, ColunaInicial, ColunaFinal, LinhaFinal, LinhaInicial) 
     coluna(ColunaFinal, ColunaFinalInt), ColunaInicialInt is ColunaFinalInt + 1, coluna(ColunaInicial, ColunaInicialInt),
     LinhaInicial #= LinhaFinal + 1.
 
+validar_en_passant_peao(COR, ColunaInicial, LinhaInicial, ColunaFinal, LinhaFinal) :-
+    COR = w, LF is LinhaFinal - 1, en_passant_peao(ColunaFinal, LF), 
+    posicao('P', COR, ColunaInicial, LinhaInicial), posicao('P', b, ColunaFinal, LF),
+    coluna(ColunaFinal, ColunaFinalInt), ColunaInicialInt is ColunaFinalInt - 1, coluna(ColunaInicial, ColunaInicialInt),
+    \+ posicao(_, _, ColunaFinal, LinhaFinal);
+
+    COR = w, LF is LinhaFinal - 1, en_passant_peao(ColunaFinal, LF), 
+    posicao('P', COR, ColunaInicial, LinhaInicial), posicao('P', b, ColunaFinal, LF),
+    coluna(ColunaFinal, ColunaFinalInt), ColunaInicialInt is ColunaFinalInt + 1, coluna(ColunaInicial, ColunaInicialInt),
+    \+ posicao(_, _, ColunaFinal, LinhaFinal);
+
+    COR = b, LF is LinhaFinal + 1, en_passant_peao(ColunaFinal, LF), 
+    posicao('P', COR, ColunaInicial, LinhaInicial), posicao('P', w, ColunaFinal, LF),
+    coluna(ColunaFinal, ColunaFinalInt), ColunaInicialInt is ColunaFinalInt - 1, coluna(ColunaInicial, ColunaInicialInt),
+    \+ posicao(_, _, ColunaFinal, LinhaFinal);
+
+    COR = b, LF is LinhaFinal + 1, en_passant_peao(ColunaFinal, LF), 
+    posicao('P', COR, ColunaInicial, LinhaInicial), posicao('P', w, ColunaFinal, LF),
+    coluna(ColunaFinal, ColunaFinalInt), ColunaInicialInt is ColunaFinalInt + 1, coluna(ColunaInicial, ColunaInicialInt),
+    \+ posicao(_, _, ColunaFinal, LinhaFinal).
+    
 validar_cavalo(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial) :-
     coluna(ColunaFinal, ColunaFinalInt),
     ColunaInicialInt is ColunaFinalInt + 1, LinhaInicial is LinhaFinal - 2,

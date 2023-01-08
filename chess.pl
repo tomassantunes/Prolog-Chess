@@ -1,9 +1,9 @@
 % -*- Prolog -*-
 
-% syntax -> lj(X, "...", []).
-lj(jogada(A, B, ''))    --> branca(A), " ", preta(B).
-lj(jogada(A, B, ''))    --> branca(A), " ", resultado(B).
-lj(jogada(A, B, C)) --> branca(A), " ", preta(B), " ", resultado(C).
+% syntax -> algebrica(X, "...", []).
+algebrica(jogada(A, B, ''))    --> branca(A), " ", preta(B).
+algebrica(jogada(A, B, ''))    --> branca(A), " ", resultado(B).
+algebrica(jogada(A, B, C))     --> branca(A), " ", preta(B), " ", resultado(C).
 
 % branca(V)                        --> coluna(V), linha(V).
 branca(A)                        --> castle(A). % Ex: O-O
