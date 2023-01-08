@@ -1,6 +1,7 @@
 % -*- Prolog -*-
 
 % gplc chess-main.pl chess.pl
+% ./chess-main {nome-ficheiro}
 :- initialization(comando).
 
 :- dynamic(posicao/4).
@@ -23,6 +24,8 @@ gets(S, -1, S).		% -1 é o end-of-file
 gets(I, C, [C|O]) :- get0(CC), gets(I, CC, O).
 
 init_posicoes :- 
+    retractall(jogadas_ilegais(_)),
+    retractall(en_passant_peao(_, _)).
     retractall(posicao(_, _, _, _)),
     assertz(posicao('K', w, e, 1)),
     assertz(posicao('Q', w, d, 1)),
@@ -51,15 +54,12 @@ init_posicoes :-
     assertz(posicao('K', b, e, 8)),
     assertz(posicao('Q', b, d, 8)),
     assertz(posicao('R', b, a, 8)),
-    assertz(posicao('R', b, h, 8)),
     assertz(posicao('N', b, b, 8)),
+    assertz(posicao('R', b, h, 8)),
     assertz(posicao('N', b, g, 8)),
     assertz(posicao('B', b, c, 8)),
     assertz(posicao('B', b, f, 8)),
-    
-    retractall(jogadas_ilegais(_)),
     assertz(jogadas_ilegais(0)),
-    retractall(en_passant_peao(_, _)).
 
 mostrar_tabuleiro :-
     forall(between(1, 8, L), (linha(L, LL), write(LL), mostrar_linha(LL))), write('  a  b  c  d  e  f  g  h'), nl.
