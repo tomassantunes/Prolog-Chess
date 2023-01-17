@@ -25,7 +25,7 @@ gets(I, C, [C|O]) :- get0(CC), gets(I, CC, O).
 
 init_posicoes :- 
     retractall(jogadas_ilegais(_)),
-    retractall(en_passant_peao(_, _)).
+    retractall(en_passant_peao(_, _)),
     retractall(posicao(_, _, _, _)),
     assertz(posicao('K', w, e, 1)),
     assertz(posicao('Q', w, d, 1)),
@@ -59,7 +59,7 @@ init_posicoes :-
     assertz(posicao('N', b, g, 8)),
     assertz(posicao('B', b, c, 8)),
     assertz(posicao('B', b, f, 8)),
-    assertz(jogadas_ilegais(0)),
+    assertz(jogadas_ilegais(0)).
 
 mostrar_tabuleiro :-
     forall(between(1, 8, L), (linha(L, LL), write(LL), mostrar_linha(LL))), write('  a  b  c  d  e  f  g  h'), nl.
