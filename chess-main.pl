@@ -229,6 +229,29 @@ atualizar_tabuleiro(COR, movimento('P', ColunaInicial, LinhaFinal, A)) :-
     retract(posicao('P', COR, ColunaInicial, LinhaInicial)), assertz(posicao('P', COR, ColunaFinal, LinhaFinal)); 
     print(' --> jogada ILEGAL.'), ilegal, true.
 
+% movimento de peão com promoção
+atualizar_tabuleiro(COR, movimento('P', CF, LF, '=', P)) :-
+    validar_peao(COR, LI, CF, LF), \+ posicao(_, _, CF, LF), \+ P = 'K', \+ P = 'P',
+    retract(posicao('P', COR, CF, LI)), assertz(posicao(P, COR, CF, LF));
+    print(' --> jogada ILEGAL.'), ilegal, true.
+
+% movimento de peão com captura e promoção
+atualizar_tabuleiro(COR, movimento('P', CI, captura, CF, LF, '=', P)) :-
+    validar_peao_captura(COR, CI, LI, CF, LF), \+ P = 'K', \+ P = 'P',
+    retract(posicao('P', COR, CI, LI)), retract(posicao(_, _, CF, LF)), assertz(posicao(P, COR, CF, LF));
+    print(' --> jogada ILEGAL.'), ilegal, true.
+
+% movimento de peão com promoção e xeque ou xeque-mate
+atualizar_tabuleiro(COR, movimento('P', CF, LF, '=', P, A)) :-
+    validar_peao(COR, LI, CF, LF), \+ posicao(_, _, CF, LF), \+ P = 'K', \+ P = 'P', em_xeque(COR, A),
+    retract(posicao('P', COR, CF, LI)), assertz(posicao(P, COR, CF, LF));
+    print(' --> jogada ILEGAL.'), ilegal, true.
+
+atualizar_tabuleiro(COR, movimento('P', CI, captura, CF, LF, '=', P, A)) :-
+    validar_peao_captura(COR, CI, LI, CF, LF), \+ P = 'K', \+ P = 'P', em_xeque(COR, A),
+    retract(posicao('P', COR, CI, LI)), retract(posicao(_, _, CF, LF)), assertz(posicao(P, COR, CF, LF));
+    print(' --> jogada ILEGAL.'), ilegal, true.
+
 % movimentos do resto das peças com take
 atualizar_tabuleiro(COR, movimento(TIPO, captura, ColunaFinal, LinhaFinal)) :-
     TIPO = 'N', validar_cavalo_captura(COR, ColunaFinal, LinhaFinal, ColunaInicial, LinhaInicial),

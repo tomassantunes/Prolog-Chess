@@ -5,43 +5,49 @@ algebrica(jogada(A, B, ''))    --> branca(A), " ", preta(B).
 algebrica(jogada(A, B, ''))    --> branca(A), " ", resultado(B).
 algebrica(jogada(A, B, C))     --> branca(A), " ", preta(B), " ", resultado(C).
 
-% branca(V)                        --> coluna(V), linha(V).
-branca(A)                        --> castle(A). % Ex: O-O
-branca(movimento('P', A, B))          --> coluna(A), linha(B). % Ex: e4
-branca(movimento(A, B, C))            --> peca(A), coluna(B), linha(C). % Ex: Nf3
-branca(movimento(A, B, C, D))         --> peca(A), coluna(B), coluna(C), linha(D). % Ex: Nbd2
-branca(movimento(A, B, C, D))         --> peca(A), linha(B), coluna(C), linha(D). % Ex: N3d4
-branca(movimento('P', A, B, C, D))    --> coluna(A), acao(B), coluna(C), linha(D). % Ex: exf5
-branca(movimento(A, B, C, D))         --> peca(A), acao(B), coluna(C), linha(D). % Ex: Qxf6
-branca(movimento(A, B, C, D, E))      --> peca(A), coluna(B), acao(C), coluna(D), linha(E). % Ex: Nbxf6
-branca(movimento(A, B, C, D, E))      --> peca(A), linha(B), acao(C), coluna(D), linha(E). % Ex: N3xd4
-branca(movimento('P', A, B, C))       --> coluna(A), linha(B), acao(C). % e5+
-branca(movimento('P', A, B, C, D, E)) --> coluna(A), acao(B), coluna(C), linha(D), acao(E). % exf5+
-branca(movimento(A, B, C, D))         --> peca(A), coluna(B), linha(C), acao(D). % Ra8+
-branca(movimento(A, B, C, D, E))      --> peca(A), acao(B), coluna(C), linha(D), acao(E).  % Ex: Rxa8+
-branca(movimento(A, B, C, D, E))      --> peca(A), coluna(B), coluna(C), linha(D), acao(E).  % Ex: Nba8+
-branca(movimento(A, B, C, D, E))      --> peca(A), linha(B), coluna(C), linha(D), acao(E).  % Ex: R3a8+
-branca(movimento(A, B, C, D, E, F))   --> peca(A), coluna(B), acao(C), coluna(D), linha(E), acao(F).  % Ex: Nbxa8+
-branca(movimento(A, B, C, D, E, F))   --> peca(A), linha(B), acao(C), coluna(D), linha(E), acao(F).  % Ex: R3xa8+
+branca(A)                                      --> castle(A). % Ex: O-O
+branca(movimento('P', A, B))                   --> coluna(A), linha(B). % Ex: e4
+branca(movimento(A, B, C))                     --> peca(A), coluna(B), linha(C). % Ex: Nf3
+branca(movimento(A, B, C, D))                  --> peca(A), coluna(B), coluna(C), linha(D). % Ex: Nbd2
+branca(movimento(A, B, C, D))                  --> peca(A), linha(B), coluna(C), linha(D). % Ex: N3d4
+branca(movimento('P', A, B, C, D))             --> coluna(A), acao(B), coluna(C), linha(D). % Ex: exf5
+branca(movimento(A, B, C, D))                  --> peca(A), acao(B), coluna(C), linha(D). % Ex: Qxf6
+branca(movimento(A, B, C, D, E))               --> peca(A), coluna(B), acao(C), coluna(D), linha(E). % Ex: Nbxf6
+branca(movimento(A, B, C, D, E))               --> peca(A), linha(B), acao(C), coluna(D), linha(E). % Ex: N3xd4
+branca(movimento('P', A, B, C))                --> coluna(A), linha(B), acao(C). % e5+
+branca(movimento('P', A, B, C, D, E))          --> coluna(A), acao(B), coluna(C), linha(D), acao(E). % exf5+
+branca(movimento(A, B, C, D))                  --> peca(A), coluna(B), linha(C), acao(D). % Ra8+
+branca(movimento(A, B, C, D, E))               --> peca(A), acao(B), coluna(C), linha(D), acao(E).  % Ex: Rxa8+
+branca(movimento(A, B, C, D, E))               --> peca(A), coluna(B), coluna(C), linha(D), acao(E).  % Ex: Nba8+
+branca(movimento(A, B, C, D, E))               --> peca(A), linha(B), coluna(C), linha(D), acao(E).  % Ex: R3a8+
+branca(movimento(A, B, C, D, E, F))            --> peca(A), coluna(B), acao(C), coluna(D), linha(E), acao(F).  % Ex: Nbxa8+
+branca(movimento(A, B, C, D, E, F))            --> peca(A), linha(B), acao(C), coluna(D), linha(E), acao(F).  % Ex: R3xa8+
+branca(movimento('P', A, B, '=',C))            --> coluna(A), linha(B), "=", peca(C). % f8=Q
+branca(movimento('P', A, B, C, D, '=', E))     --> coluna(A), acao(B), coluna(C), linha(D), "=", peca(E). % fxg8=Q
+branca(movimento('P', A, B, '=', C, D))        --> coluna(A), linha(B), "=", peca(C), acao(D). % f8=Q+
+branca(movimento('P', A, B, C, D, '=', E, F))  --> coluna(A), acao(B), coluna(C), linha(D), "=", peca(E), acao(F). % fxg8=Q+
 
-% preta(V)                         --> coluna(V), linha(V).
-preta(A)                         --> castle(A). % Ex: O-O
-preta(movimento('P', A, B))           --> coluna(A), linha(B). % Ex: e4
-preta(movimento(A, B, C))             --> peca(A), coluna(B), linha(C). % Ex: Nf3
-preta(movimento(A, B, C, D))          --> peca(A), coluna(B), coluna(C), linha(D). % Ex: Nbd2
-preta(movimento(A, B, C, D))          --> peca(A), linha(B), coluna(C), linha(D). % Ex: N3d4
-preta(movimento(A, B, C, D, E))       --> peca(A), coluna(B), acao(C), coluna(D), linha(E). % Ex: Nbxf6
-preta(movimento(A, B, C, D, E))       --> peca(A), linha(B), acao(C), coluna(D), linha(E). % Ex: N3xd4
-preta(movimento('P', A, B, C, D))     --> coluna(A), acao(B), coluna(C), linha(D). % Ex: exf5
-preta(movimento(A, B, C, D))          --> peca(A), acao(B), coluna(C), linha(D). % Ex: Qxf6
-preta(movimento('P', A, B, C))        --> coluna(A), linha(B), acao(C). % e5+
-preta(movimento('P', A, B, C, D, E))  --> coluna(A), acao(B), coluna(C), linha(D), acao(E). % exf5+
-preta(movimento(A, B, C, D))          --> peca(A), coluna(B), linha(C), acao(D). % Ra8+
-preta(movimento(A, B, C, D, E))       --> peca(A), acao(B), coluna(C), linha(D), acao(E).  % Ex: Rxa8+
-preta(movimento(A, B, C, D, E))       --> peca(A), coluna(B), coluna(C), linha(D), acao(E).  % Ex: Nba8+
-preta(movimento(A, B, C, D, E))       --> peca(A), linha(B), coluna(C), linha(D), acao(E).  % Ex: R3a8+
-preta(movimento(A, B, C, D, E, F))    --> peca(A), coluna(B), acao(C), coluna(D), linha(E), acao(F).  % Ex: Nbxa8+
-preta(movimento(A, B, C, D, E, F))    --> peca(A), linha(B), acao(C), coluna(D), linha(E), acao(F).  % Ex: R3xa8+
+preta(A)                                       --> castle(A). % Ex: O-O
+preta(movimento('P', A, B))                    --> coluna(A), linha(B). % Ex: e4
+preta(movimento(A, B, C))                      --> peca(A), coluna(B), linha(C). % Ex: Nf3
+preta(movimento(A, B, C, D))                   --> peca(A), coluna(B), coluna(C), linha(D). % Ex: Nbd2
+preta(movimento(A, B, C, D))                   --> peca(A), linha(B), coluna(C), linha(D). % Ex: N3d4
+preta(movimento(A, B, C, D, E))                --> peca(A), coluna(B), acao(C), coluna(D), linha(E). % Ex: Nbxf6
+preta(movimento(A, B, C, D, E))                --> peca(A), linha(B), acao(C), coluna(D), linha(E). % Ex: N3xd4
+preta(movimento('P', A, B, C, D))              --> coluna(A), acao(B), coluna(C), linha(D). % Ex: exf5
+preta(movimento(A, B, C, D))                   --> peca(A), acao(B), coluna(C), linha(D). % Ex: Qxf6
+preta(movimento('P', A, B, C))                 --> coluna(A), linha(B), acao(C). % e5+
+preta(movimento('P', A, B, C, D, E))           --> coluna(A), acao(B), coluna(C), linha(D), acao(E). % exf5+
+preta(movimento(A, B, C, D))                   --> peca(A), coluna(B), linha(C), acao(D). % Ra8+
+preta(movimento(A, B, C, D, E))                --> peca(A), acao(B), coluna(C), linha(D), acao(E).  % Ex: Rxa8+
+preta(movimento(A, B, C, D, E))                --> peca(A), coluna(B), coluna(C), linha(D), acao(E).  % Ex: Nba8+
+preta(movimento(A, B, C, D, E))                --> peca(A), linha(B), coluna(C), linha(D), acao(E).  % Ex: R3a8+
+preta(movimento(A, B, C, D, E, F))             --> peca(A), coluna(B), acao(C), coluna(D), linha(E), acao(F).  % Ex: Nbxa8+
+preta(movimento(A, B, C, D, E, F))             --> peca(A), linha(B), acao(C), coluna(D), linha(E), acao(F).  % Ex: R3xa8+
+preta(movimento('P', A, B, '=',C))             --> coluna(A), linha(B), "=", peca(C). % f1=Q
+preta(movimento('P', A, B, C, D, '=', E))      --> coluna(A), acao(B), coluna(C), linha(D), "=", peca(E). % fxg1=Q
+preta(movimento('P', A, B, '=', C, D))         --> coluna(A), linha(B), "=", peca(C), acao(D). % f1=Q+
+preta(movimento('P', A, B, C, D, '=', E, F))   --> coluna(A), acao(B), coluna(C), linha(D), "=", peca(E), acao(F). % fxg1=Q+
 
 peca('K') --> "K".
 peca('Q') --> "Q".
