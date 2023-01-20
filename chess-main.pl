@@ -7,6 +7,7 @@
 :- dynamic(posicao/4).
 :- dynamic(jogadas_ilegais/1).
 :- dynamic(en_passant_peao/2).
+:- dynamic(active_xeque/1).
 
 % usar o predicado argument_list(LISTA) para ver os argumentos dados
 % e direcionar para o formato pretendido as acções
@@ -26,6 +27,7 @@ gets(I, C, [C|O]) :- get0(CC), gets(I, CC, O).
 init_posicoes :- 
     retractall(jogadas_ilegais(_)),
     retractall(en_passant_peao(_, _)),
+    retractall(active_xeque(_)),
     retractall(posicao(_, _, _, _)),
     assertz(posicao('K', w, e, 1)),
     assertz(posicao('Q', w, d, 1)),
@@ -225,7 +227,7 @@ atualizar_tabuleiro(COR, movimento('P', ColunaInicial, captura, ColunaFinal, Lin
 
 % movimentos de peões com xeque ou xeque-mate
 atualizar_tabuleiro(COR, movimento('P', ColunaInicial, LinhaFinal, A)) :-
-    validar_peao(COR, LinhaInicial, ColunaFinal, LinhaFinal), em_xeque(COR, A),
+    validar_peao(COR, LinhaInicial, ColunaFinal, LinhaFinal), validar_xeque(COR, 'P', ColunaFinal, LinhaFinal), em_xeque(COR, A),
     retract(posicao('P', COR, ColunaInicial, LinhaInicial)), assertz(posicao('P', COR, ColunaFinal, LinhaFinal)); 
     print(' --> jogada ILEGAL.'), ilegal, true.
 
@@ -247,6 +249,7 @@ atualizar_tabuleiro(COR, movimento('P', CF, LF, '=', P, A)) :-
     retract(posicao('P', COR, CF, LI)), assertz(posicao(P, COR, CF, LF));
     print(' --> jogada ILEGAL.'), ilegal, true.
 
+% movimento de peão com captura, promoção e xeque ou xeque-mate
 atualizar_tabuleiro(COR, movimento('P', CI, captura, CF, LF, '=', P, A)) :-
     validar_peao_captura(COR, CI, LI, CF, LF), \+ P = 'K', \+ P = 'P', em_xeque(COR, A),
     retract(posicao('P', COR, CI, LI)), retract(posicao(_, _, CF, LF)), assertz(posicao(P, COR, CF, LF));
@@ -451,9 +454,23 @@ atualizar_tabuleiro(COR, CASTLE) :-
     
     print(' --> jogada ILEGAL.'), ilegal.
 
+% validar xeque para o peão
+validar_xeque(COR, 'P', CF, LF) :-
+    COR = w, coluna(CF, CFInt), CXInt is CFInt + 1, coluna(CX, CXInt),
+    LX is LF + 1, posicao('K', b, CX, LX);
+
+    COR = w, coluna(CF, CFInt), CXInt is CFInt + 1, coluna(CX, CXInt),
+    LX is LF + 1, posicao('K', b, CX, LX);
+
+    COR = b, coluna(CF, CFInt), CXInt is CFInt + 1, coluna(CX, CXInt),
+    LX is LF - 1, posicao('K', w, CX, LX);
+
+    COR = b, coluna(CF, CFInt), CXInt is CFInt + 1, coluna(CX, CXInt),
+    LX is LF - 1, posicao('K', w, CX, LX).
+
 em_xeque(COR, xeque) :-
-    COR = w, print(' --> PRETAS em XEQUE'), nl;
-    COR = b, print(' --> BRANCAS em XEQUE'), nl.
+    COR = w, print(' --> PRETAS em XEQUE'), nl, assertz(active_xeque(COR));
+    COR = b, print(' --> BRANCAS em XEQUE'), nl, assertz(active_xeque(COR)).
 
 em_xeque(COR, 'xeque-mate') :-
     COR = w, print('PRETAS em XEQUE-MATE'), nl, fim('BRANCAS GANHAM');
